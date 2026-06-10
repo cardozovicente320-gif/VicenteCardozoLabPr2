@@ -73,7 +73,7 @@ struct SistemaDeportivo {
 };
 
 
-//FUNCIONES AUXILIARES DE CADENAS
+//2. Funciones auxiliares de cadenas
 
 
 void copiarCadena(char* destino, const char* origen) {
@@ -115,7 +115,7 @@ bool contieneSubcadena(const char* cadena, const char* subcadena) {
 }
 
  
-//Capa de logica de negocio 
+//3.Capa de logica de negocio 
 
 void inicializarSistema(SistemaDeportivo* s, Torneo torneo) {
     s->torneo = torneo;
@@ -258,7 +258,7 @@ Equipo** generarTablaPosiciones(SistemaDeportivo* s, int* cantidad) {
         tabla[i] = &s->equipos[i];
     }
     
-    // Algoritmo de ordenación burbuja por punteros bajo los criterios del negocio
+    //4. Algoritmo de ordenación burbuja por punteros bajo los criterios del negocio
     for (int i = 0; i < *cantidad - 1; i++) {
         for (int j = 0; j < *cantidad - i - 1; j++) {
             bool intercambiar = false;
@@ -351,8 +351,236 @@ Jugador* agregarJugador(SistemaDeportivo* s, int idEquipo, const char* nombre, c
     return &nuevo;
 }
 
-int main(){
+Jugador* buscarJugadorPorID(SistemaDeportivo* s, int id) {
+    for (int i = 0; i < s->numJugadores; i++) {
+        if (s->jugadores[i].id == id) return &s->jugadores[i];
+    }
+    return nullptr;
+}
+
+Jugador** buscarJugadoresPorNombre(SistemaDeportivo* s, const char* subcadena, int* cantidad) {
+    *cantidad = 0;
+    for (int i = 0; i < s->numJugadores; i++) {
+        if (contieneSubcadena(s->jugadores[i].nombre, subcadena)) (*cantidad)++;
+    }
+    if (*cantidad == 0) return nullptr;
+    
+    Jugador** resultado = new Jugador*[*cantidad];
+    int idx = 0;
+    for (int i = 0; i < s->numJugadores; i++) {
+        if (contieneSubcadena(s->jugadores[i].nombre, subcadena)) {
+            resultado[idx++] = &s->jugadores[i];
+        }
+    }
+    return resultado;
+}
+
+Jugador** listarJugadoresPorEquipo(SistemaDeportivo* s, int idEquipo, int* cantidad) {
+    *cantidad = 0;
+    for (int i = 0; i < s->numJugadores; i++) {
+        if (s->jugadores[i].idEquipo == idEquipo) (*cantidad)++;
+    }
+    if (*cantidad == 0) return nullptr;
+    
+    Jugador** resultado = new Jugador*[*cantidad];
+    int idx = 0;
+    for (int i = 0; i < s->numJugadores; i++) {
+        if (s->jugadores[i].idEquipo == idEquipo) {
+            resultado[idx++] = &s->jugadores[i];
+        }
+    }
+    return resultado;
+}
+
+Jugador** listarJugadores(SistemaDeportivo* s, int* cantidad) {
+    *cantidad = s->numJugadores;
+    if (*cantidad == 0) return nullptr;
+    
+    Jugador** resultado = new Jugador*[*cantidad];
+    for (int i = 0; i < s->numJugadores; i++) {
+        resultado[i] = &s->jugadores[i];
+    }
+    return resultado;
+}
+
+bool actualizarJugador(SistemaDeportivo* s, int id, Jugador jugadorActualizado) {
+    Jugador* jug = buscarJugadorPorID(s, id);
+    if (jug == nullptr) return false;
+    
+    copiarCadena(jug->nombre, jugadorActualizado.nombre);
+    copiarCadena(jug->posicion, jugadorActualizado.posicion);
+    jug->edad = jugadorActualizado.edad;
+    jug->numeroDorsal = jugadorActualizado.numeroDorsal;
+    return true;
+}
+
+bool eliminarJugador(SistemaDeportivo* s, int id) {
+    int idx = -1;
+    for (int i = 0; i < s->numJugadores; i++) {
+        if (s->jugadores[i].id == id) {
+            idx = i;
+            break;
+        }
+    }
+    if (idx == -1) return false;
+    
+    for (int i = idx; i < s->numJugadores - 1; i++) {
+        s->jugadores[i] = s->jugadores[i+1];
+    }
+    s->numJugadores--;
+    return true;
+}
+
+Partido* buscarPartidoPorID(SistemaDeportivo* s, int id) {
+    for (int i = 0; i < s->numPartidos; i++) {
+        if (s->partidos[i].id == id) return &s->partidos[i];
+    }
+    return nullptr;
+}
+
+Partido* programarPartido(SistemaDeportivo* s, int idLocal, int idVisitante, const char* fecha, const char* descripcion) {
+    if (idLocal == idVisitante) return nullptr;
+    if (buscarEquipoPorID(s, idLocal) == nullptr || buscarEquipoPorID(s, idVisitante) == nullptr) return nullptr;
+    
+    for (int i = 0; i < s->numPartidos; i++) {
+        if (compararCadenas(s->partidos[i].estado, "PROGRAMADO")) {
+            if ((s->partidos[i].idEquipoLocal == idLocal && s->partidos[i].idEquipoVisitante == idVisitante) ||
+                (s->partidos[i].idEquipoLocal == idVisitante && s->partidos[i].idEquipoVisitante == idLocal)) {
+                return nullptr;
+            }
+        }
+    }
+    
+    if (s->numPartidos == s->capacidadPartidos) {
+        redimensionarPartidos(s);
+    }
+    
+    Partido& nuevo = s->partidos[s->numPartidos];
+    nuevo.id = s->siguienteIdPartido++;
+    nuevo.idEquipoLocal = idLocal;
+    nuevo.idEquipoVisitante = idVisitante;
+    nuevo.puntosLocal = 0;
+    nuevo.puntosVisitante = 0;
+    copiarCadena(nuevo.fecha, fecha);
+    copiarCadena(nuevo.estado, "PROGRAMADO");
+    copiarCadena(nuevo.descripcion, descripcion);
+    
+    s->numPartidos++;
+    return &nuevo;
+}
+
+void alterarEstadisticasEquipo(Equipo* eq, int puntosObtenidos, int victor, int empat, int derrot, int fav, int contra) {
+    if (eq == nullptr) return;
+    eq->puntos += puntosObtenidos;
+    eq->victorias += victor;
+    eq->empates += empat;
+    eq->derrotas += derrot;
+    eq->puntosAFavor += fav;
+    eq->puntosEnContra += contra;
+}
+
+Partido* registrarResultado(SistemaDeportivo* s, int idPartido, int puntosLocal, int puntosVisitante) {
+    Partido* part = buscarPartidoPorID(s, idPartido);
+    if (part == nullptr || !compararCadenas(part->estado, "PROGRAMADO")) return nullptr;
+    
+    part->puntosLocal = puntosLocal;
+    part->puntosVisitante = puntosVisitante;
+    copiarCadena(part->estado, "JUGADO");
+    
+    Equipo* local = buscarEquipoPorID(s, part->idEquipoLocal);
+    Equipo* visitante = buscarEquipoPorID(s, part->idEquipoVisitante);
+    
+    if (puntosLocal > puntosVisitante) {
+        alterarEstadisticasEquipo(local, 3, 1, 0, 0, puntosLocal, puntosVisitante);
+        alterarEstadisticasEquipo(visitante, 0, 0, 0, 1, puntosVisitante, puntosLocal);
+    } else if (puntosLocal == puntosVisitante) {
+        alterarEstadisticasEquipo(local, 1, 0, 1, 0, puntosLocal, puntosVisitante);
+        alterarEstadisticasEquipo(visitante, 1, 0, 1, 0, puntosVisitante, puntosLocal);
+    } else {
+        alterarEstadisticasEquipo(local, 0, 0, 0, 1, puntosLocal, puntosVisitante);
+        alterarEstadisticasEquipo(visitante, 3, 1, 0, 0, puntosVisitante, puntosLocal);
+    }
+    
+    return part;
+}
+
+Partido** buscarPartidosPorEquipo(SistemaDeportivo* s, int idEquipo, int* cantidad) {
+    *cantidad = 0;
+    for (int i = 0; i < s->numPartidos; i++) {
+        if (s->partidos[i].idEquipoLocal == idEquipo || s->partidos[i].idEquipoVisitante == idEquipo) {
+            (*cantidad)++;
+        }
+    }
+    if (*cantidad == 0) return nullptr;
+    
+    Partido** resultado = new Partido*[*cantidad];
+    int idx = 0;
+    for (int i = 0; i < s->numPartidos; i++) {
+        if (s->partidos[i].idEquipoLocal == idEquipo || s->partidos[i].idEquipoVisitante == idEquipo) {
+            resultado[idx++] = &s->partidos[i];
+        }
+    }
+    return resultado;
+}
+
+Partido** listarPartidosPorEstado(SistemaDeportivo* s, const char* estado, int* cantidad) {
+    *cantidad = 0;
+    for (int i = 0; i < s->numPartidos; i++) {
+        if (compararCadenas(s->partidos[i].estado, estado)) (*cantidad)++;
+    }
+    if (*cantidad == 0) return nullptr;
+    
+    Partido** resultado = new Partido*[*cantidad];
+    int idx = 0;
+    for (int i = 0; i < s->numPartidos; i++) {
+        if (compararCadenas(s->partidos[i].estado, estado)) {
+            resultado[idx++] = &s->partidos[i];
+        }
+    }
+    return resultado;
+}
+
+Partido** listarPartidos(SistemaDeportivo* s, int* cantidad) {
+    *cantidad = s->numPartidos;
+    if (*cantidad == 0) return nullptr;
+    
+    Partido** resultado = new Partido*[*cantidad];
+    for (int i = 0; i < s->numPartidos; i++) {
+        resultado[i] = &s->partidos[i];
+    }
+    return resultado;
+}
+
+bool cancelarPartido(SistemaDeportivo* s, int idPartido) {
+    Partido* part = buscarPartidoPorID(s, idPartido);
+    if (part == nullptr || compararCadenas(part->estado, "CANCELADO")) return false;
+    
+    if (compararCadenas(part->estado, "JUGADO")) {
+        Equipo* local = buscarEquipoPorID(s, part->idEquipoLocal);
+        Equipo* visitante = buscarEquipoPorID(s, part->idEquipoVisitante);
+        
+        if (part->puntosLocal > part->puntosVisitante) {
+            alterarEstadisticasEquipo(local, -3, -1, 0, 0, -part->puntosLocal, -part->puntosVisitante);
+            alterarEstadisticasEquipo(visitante, 0, 0, 0, -1, -part->puntosVisitante, -part->puntosLocal);
+        } else if (part->puntosLocal == part->puntosVisitante) {
+            alterarEstadisticasEquipo(local, -1, 0, -1, 0, -part->puntosLocal, -part->puntosVisitante);
+            // AQUÍ ESTABA EL ERROR: Cambiado -part->pLocal por -part->puntosLocal
+            alterarEstadisticasEquipo(visitante, -1, 0, -1, 0, -part->puntosVisitante, -part->puntosLocal); 
+        } else {
+            alterarEstadisticasEquipo(local, 0, 0, 0, -1, -part->puntosLocal, -part->puntosVisitante);
+            alterarEstadisticasEquipo(visitante, -3, -1, 0, 0, -part->puntosVisitante, -part->puntosLocal);
+        }
+    }
+    
+    copiarCadena(part->estado, "CANCELADO");
+    return true;
+}
 
 
+// 5. FUNCIÓN PRINCIPAL (Punto de entrada explícito para Consola)
+
+
+int main(int argc, char* argv[]) {
+    cout << "Sistema deportivo cargado correctamente sin errores de compilacion." << endl;
     return 0;
 }
