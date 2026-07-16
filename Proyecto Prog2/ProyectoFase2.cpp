@@ -7,9 +7,7 @@
 
 using namespace std;
 
-// ============================================================================
-// 1. ESTRUCTURAS DE DATOS ADAPTADAS PARA PERSISTENCIA
-// ============================================================================
+// 1. Estructuras de datos adaptada para persistencia.
 
 struct Torneo {
     char nombre[100];
@@ -113,9 +111,9 @@ const char* FILE_PARTIDOS = "partidos.bin";
 
 const int MAX_RESULTADOS = 100;
 
-// ============================================================================
-// 2. FUNCIONES AUXILIARES DE CADENAS Y TIEMPO
-// ============================================================================
+
+// 2. Funciones auxiliares de cadena y tiempo.
+
 
 void copiarCadena(char* destino, const char* origen) {
     while (*origen != '\0') {
@@ -160,9 +158,9 @@ void obtenerFechaHoy(char* buffer) {
     strftime(buffer, 11, "%Y-%m-%d", now);
 }
 
-// ============================================================================
-// 3. CAPA DE PERSISTENCIA Y CONTROLADORES DE HEADER
-// ============================================================================
+
+// 3. Capa de persistencia y controladores header.
+
 
 bool inicializarArchivo(const char* nombreArchivo) {
     ifstream check(nombreArchivo, ios::binary);
@@ -179,7 +177,7 @@ bool inicializarArchivo(const char* nombreArchivo) {
         // Torneo no lleva Header autoincremental por regla del enunciado
         Torneo t;
         copiarCadena(t.nombre, "Torneo de Verano 2026");
-        copiarCadena(t.deporte, "Fútbol");
+        copiarCadena(t.deporte, "Futbol");
         copiarCadena(t.formato, "ELIMINATORIA");
         copiarCadena(t.fechaInicio, "2026-06-01");
         copiarCadena(t.fechaFin, "2026-07-15");
@@ -262,11 +260,9 @@ bool inicializarSistemaArchivos() {
            inicializarArchivo(FILE_PARTIDOS);
 }
 
-// ============================================================================
-// 4. FUNCIONES DE PERSISTENCIA POR ENTIDAD (CRUD)
-// ============================================================================
 
-// --- EQUIPOS ---
+// 4. Funciones de persistencia  (CRUD)
+//  Equipos
 
 bool guardarEquipo(Equipo& equipo) {
     ArchivoHeader h = leerHeader(FILE_EQUIPOS);
@@ -333,7 +329,7 @@ int contarEquiposActivos() {
     return leerHeader(FILE_EQUIPOS).registrosActivos;
 }
 
-// --- JUGADORES ---
+// Jugadores
 
 bool guardarJugador(Jugador& jugador) {
     ArchivoHeader h = leerHeader(FILE_JUGADORES);
@@ -395,7 +391,7 @@ bool eliminarJugadorLogico(int id) {
     return actualizarHeader(FILE_JUGADORES, h);
 }
 
-// --- PARTIDOS ---
+// Partidos
 
 bool guardarPartido(Partido& partido) {
     ArchivoHeader h = leerHeader(FILE_PARTIDOS);
@@ -445,9 +441,9 @@ bool actualizarPartido(Partido& partido) {
     return true;
 }
 
-// ============================================================================
-// 5. LÓGICA DE BÚSQUEDA ADAPTADA (Arrays temporales en vez de dinámicos)
-// ============================================================================
+
+// 5. Logica de busqueda adaptada (Arrays temporales en vez de dinámicos).
+
 
 int buscarEquiposPorNombre(const char* subcadena, Equipo resultados[], int maxResultados) {
     ifstream archivo(FILE_EQUIPOS, ios::binary);
@@ -525,9 +521,9 @@ int listarPartidosPorEstado(const char* estado, Partido resultados[], int maxRes
     return count;
 }
 
-// ============================================================================
-// 6. OPERACIONES COMPUESTAS (Registro y Reversión de Resultados)
-// ============================================================================
+
+// 6. OPERACIONES COMPUESTAS (Registro y Reversión de Resultados).
+
 
 bool registrarResultadoPartido(int idPartido, int golesLocal, int golesVisitante, Gol detalleGoles[], int numGoles) {
     Partido part;
@@ -643,9 +639,9 @@ bool cancelarPartidoJugado(int idPartido) {
     return actualizarPartido(part) && actualizarEquipo(local) && actualizarEquipo(visitante);
 }
 
-// ============================================================================
-// 7. MANTENIMIENTO, SEGURIDAD E INTEGRIDAD
-// ============================================================================
+
+// 7. Mantenimiento de integridad referencial y backups 
+
 
 void verificarIntegridadReferencial() {
     int equiposVerificados = 0, jugadoresVerificados = 0, partidosVerificados = 0;
@@ -738,9 +734,9 @@ bool crearBackup() {
     return true;
 }
 
-// ============================================================================
-// 8. REPORTES ANALÍTICOS (Desde Archivo)
-// ============================================================================
+
+// 8. Reporte de tabla de posiciones y goleadores. 
+
 
 void ordenarEquiposPorBurbuja(Equipo arr[], int tam) {
     for (int i = 0; i < tam - 1; i++) {
@@ -890,9 +886,9 @@ void reportarFichaTecnicaPartido(int idPartido) {
     cout << "╚══════════════════════════════════════════════════════════╝\n";
 }
 
-// ============================================================================
+
 // 9. CAPA DE PRESENTACIÓN / MENÚS DE CONSOLA
-// ============================================================================
+
 
 void limpiarBuffer() {
     cin.clear();
@@ -1020,7 +1016,7 @@ void menuRegistrarJugador() {
     }
 
     leerCadenaObligatoria(j.nombre, 100, "Nombre Completo");
-    leerCadenaObligatoria(j.cedula, 20, "Cédula");
+    leerCadenaObligatoria(j.cedula, 20, "Cedula");
     
     // Validar cédula única en disco
     ifstream f(FILE_JUGADORES, ios::binary);
@@ -1036,9 +1032,9 @@ void menuRegistrarJugador() {
         f.close();
     }
 
-    leerCadenaObligatoria(j.posicion, 20, "Posición (PORTERO, DEFENSA, etc.)");
+    leerCadenaObligatoria(j.posicion, 20, "Posicion (PORTERO, DEFENSA, etc.)");
     cout << "Edad: "; cin >> j.edad;
-    cout << "Número Dorsal: "; cin >> j.numeroDorsal; limpiarBuffer();
+    cout << "Numero Dorsal: "; cin >> j.numeroDorsal; limpiarBuffer();
 
     j.golesAnotados = 0; j.tarjetasAmarillas = 0; j.tarjetasRojas = 0;
 
@@ -1162,24 +1158,24 @@ int main(int argc, char* argv[]) {
     setlocale(LC_ALL, "spanish");
 
     if (!inicializarSistemaArchivos()) {
-        cout << "ERROR crítico al inicializar los archivos del sistema.\n";
+        cout << "ERROR critico al inicializar los archivos del sistema.\n";
         return 1;
     }
 
     int opPrincipal = -1;
     do {
         cout << "\n==============================================\n";
-        cout << "         SISTEMA DE GESTIÓN DE TORNEOS        \n";
+        cout << "         SISTEMA DE GESTION DE TORNEOS        \n";
         cout << "             Liga Apertura 2026               \n";
         cout << "==============================================\n";
-        cout << "1. Gestión de Equipos\n";
-        cout << "2. Gestión de Jugadores\n";
-        cout << "3. Gestión de Partidos\n";
+        cout << "1. Gestion de Equipos\n";
+        cout << "2. Gestion de Jugadores\n";
+        cout << "3. Gestion de Partidos\n";
         cout << "4. Tabla de Posiciones\n";
-        cout << "5. Reportes Analíticos\n";
+        cout << "5. Reportes Analiticos\n";
         cout << "6. Mantenimiento del Sistema\n";
         cout << "0. Salir\n";
-        cout << "Seleccione una opción: ";
+        cout << "Seleccione una opcion: ";
         if (!(cin >> opPrincipal)) { limpiarBuffer(); continue; }
         limpiarBuffer();
 
@@ -1187,8 +1183,8 @@ int main(int argc, char* argv[]) {
             case 1: {
                 int op = -1;
                 do {
-                    cout << "\n-- SUBMENÚ EQUIPOS --\n";
-                    cout << "1. Registrar Equipo\n2. Buscar Equipo\n3. Actualizar Equipo\n4. Eliminar Equipo\n5. Listar Todos\n0. Volver\nOpción: ";
+                    cout << "\n-- SUBMENU EQUIPOS --\n";
+                    cout << "1. Registrar Equipo\n2. Buscar Equipo\n3. Actualizar Equipo\n4. Eliminar Equipo\n5. Listar Todos\n0. Volver\nOpcion: ";
                     if (cin >> op) {
                         limpiarBuffer();
                         if (op == 1) menuRegistrarEquipo();
@@ -1203,8 +1199,8 @@ int main(int argc, char* argv[]) {
             case 2: {
                 int op = -1;
                 do {
-                    cout << "\n-- SUBMENÚ JUGADORES --\n";
-                    cout << "1. Registrar Jugador\n2. Listar Todos\n0. Volver\nOpción: ";
+                    cout << "\n-- SUBMENU JUGADORES --\n";
+                    cout << "1. Registrar Jugador\n2. Listar Todos\n0. Volver\nOpcion: ";
                     if (cin >> op) {
                         limpiarBuffer();
                         if (op == 1) menuRegistrarJugador();
@@ -1216,8 +1212,8 @@ int main(int argc, char* argv[]) {
             case 3: {
                 int op = -1;
                 do {
-                    cout << "\n-- SUBMENÚ PARTIDOS --\n";
-                    cout << "1. Programar Partido\n2. Registrar Resultado Completo\n3. Cancelar/Revertir Partido Jugado\n4. Listar Todos\n0. Volver\nOpción: ";
+                    cout << "\n-- SUBMENU PARTIDOS --\n";
+                    cout << "1. Programar Partido\n2. Registrar Resultado Completo\n3. Cancelar/Revertir Partido Jugado\n4. Listar Todos\n0. Volver\nOpcion: ";
                     if (cin >> op) {
                         limpiarBuffer();
                         if (op == 1) menuProgramarPartido();
@@ -1234,8 +1230,8 @@ int main(int argc, char* argv[]) {
             case 5: {
                 int op = -1;
                 do {
-                    cout << "\n-- SUBMENÚ REPORTES --\n";
-                    cout << "1. Tabla de posiciones\n2. Tabla de goleadores (Top 10)\n3. Ficha técnica de partido\n0. Volver\nOpción: ";
+                    cout << "\n-- SUBMENU REPORTES --\n";
+                    cout << "1. Tabla de posiciones\n2. Tabla de goleadores (Top 10)\n3. Ficha técnica de partido\n0. Volver\nOpcion: ";
                     if (cin >> op) {
                         limpiarBuffer();
                         if (op == 1) reportarTablaPosiciones();
@@ -1251,8 +1247,8 @@ int main(int argc, char* argv[]) {
             case 6: {
                 int op = -1;
                 do {
-                    cout << "\n-- SUBMENÚ MANTENIMIENTO --\n";
-                    cout << "1. Verificar integridad referencial\n2. Crear backup de datos\n0. Volver\nOpción: ";
+                    cout << "\n-- SUBMENU MANTENIMIENTO --\n";
+                    cout << "1. Verificar integridad referencial\n2. Crear backup de datos\n0. Volver\nOpcion: ";
                     if (cin >> op) {
                         limpiarBuffer();
                         if (op == 1) verificarIntegridadReferencial();
@@ -1268,7 +1264,7 @@ int main(int argc, char* argv[]) {
                 cout << "Guardando y cerrando sistema...\n";
                 break;
             default:
-                cout << "Opción no válida.\n";
+                cout << "Opcion no valida.\n";
         }
     } while (opPrincipal != 0);
 
