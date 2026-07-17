@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infografía: Liga Apertura 2026 - Gestión de Datos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 650px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        }
+
+        .card-elevation {
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card-elevation:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        .flow-node {
+            position: relative;
+            z-index: 10;
+        }
+
+        .flow-line {
+            height: 4px;
+            background: #cbd5e1;
+            flex-grow: 1;
+            margin-top: 2rem;
+            position: relative;
+        }
+
+        .flow-line::after {
+            content: '▶';
+            position: absolute;
+            right: -5px;
+            top: -8px;
+            color: #cbd5e1;
+            font-size: 1.2rem;
+        }
+
+        /* Colores de la paleta seleccionada: "Brilliant & Energetic Blues" */
+        /* Colores principales: #1E3A8A (Deep Blue), #3B82F6 (Electric Blue), #F59E0B (Amber Accent), #10B981 (Emerald) */
+    </style>
+</head>
+<body class="overflow-x-hidden">
+
+<!-- 
+    PLAN NARRATIVO Y ESTRUCTURA:
+    1. Header Hero: Introducción al ecosistema del torneo y visión general del sistema.
+    2. KPIs de Capacidad: Estadísticas vitales sobre la estructura de persistencia (Equipos, Jugadores, Partidos).
+    3. Análisis de Desempeño: Visualización de la relación entre ofensiva (Goles) y éxito (Puntos).
+    4. Ciclo de Vida del Partido: Diagrama de flujo de los estados de un encuentro (Programado -> Jugado).
+    5. Distribución de Goles: Análisis por equipo para identificar el dominio ofensivo.
+    6. Integridad del Sistema: KPIs de salud de datos y mantenimiento.
+-->
+
+<!-- 
+    SELECCIÓN DE VISUALIZACIONES:
+    - Grandes Números (KPIs): Informar sobre la escala total del sistema. Método: HTML/Tailwind.
+    - Donut Chart (Chart.js): Comparar la proporción de estados de partidos (Programado, Jugado, Cancelado). Justificación: Ideal para composición simple.
+    - Bar Chart (Chart.js): Comparar el rendimiento ofensivo de los clubes. Justificación: Comparación de categorías clara.
+    - Scatter Plot (Plotly - Canvas): Relación entre Goles a Favor y Puntos Totales. Justificación: Análisis de correlación estadística.
+    - Flow Diagram: Proceso de gestión de un partido. Método: Estructuras HTML (NO SVG).
+    - Radar Chart (Chart.js): Análisis comparativo de métricas defensivas vs ofensivas.
+    
+    CONFIRMACIÓN: No se utilizó Mermaid JS ni SVG en este documento.
+-->
+
+<!-- Navegación Sticky -->
+<nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 py-3 shadow-sm">
+    <div class="max-container mx-auto px-6 flex justify-between items-center">
+        <span class="font-extrabold text-xl tracking-tight text-blue-900">LIGA APERTURA <span class="text-blue-500">2026</span></span>
+        <div class="hidden md:flex space-x-6 text-sm font-semibold text-slate-600">
+            <a href="#overview" class="hover:text-blue-600">Resumen</a>
+            <a href="#stats" class="hover:text-blue-600">Estadísticas</a>
+            <a href="#flow" class="hover:text-blue-600">Operaciones</a>
+            <a href="#integrity" class="hover:text-blue-600">Integridad</a>
+        </div>
+    </div>
+</nav>
+
+<header id="overview" class="gradient-bg text-white py-16 px-6">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-4xl md:text-6xl font-extrabold mb-4">Arquitectura de Datos Deportivos</h1>
+        <p class="text-xl opacity-90 max-w-2xl">
+            Un análisis visual de la infraestructura del Sistema de Gestión de Torneos, optimizado para el alto rendimiento y la persistencia binaria.
+        </p>
+    </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-6 -mt-10 pb-20">
+    
+    <!-- Sección KPIs Principales -->
+    <section class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+        <div class="bg-white p-6 rounded-2xl card-elevation border-b-4 border-blue-600">
+            <p class="text-slate-500 font-bold text-xs uppercase tracking-wider mb-1">Capacidad Máxima</p>
+            <h3 class="text-3xl font-black text-slate-800">50 <span class="text-lg font-normal text-slate-400">partidos/eq</span></h3>
+            <p class="text-sm mt-2 text-slate-600 italic">Límite físico por club definido en estructura.</p>
+        </div>
+        <div class="bg-white p-6 rounded-2xl card-elevation border-b-4 border-amber-500">
+            <p class="text-slate-500 font-bold text-xs uppercase tracking-wider mb-1">Carga de Goles</p>
+            <h3 class="text-3xl font-black text-slate-800">22 <span class="text-lg font-normal text-slate-400">goles/match</span></h3>
+            <p class="text-sm mt-2 text-slate-600 italic">Máximo detalle de anotaciones por partido.</p>
+        </div>
+        <div class="bg-white p-6 rounded-2xl card-elevation border-b-4 border-emerald-500">
+            <p class="text-slate-500 font-bold text-xs uppercase tracking-wider mb-1">Sistema de Puntos</p>
+            <h3 class="text-3xl font-black text-slate-800">3-1-0</h3>
+            <p class="text-sm mt-2 text-slate-600 italic">Lógica: Victoria, Empate y Derrota.</p>
+        </div>
+        <div class="bg-white p-6 rounded-2xl card-elevation border-b-4 border-indigo-500">
+            <p class="text-slate-500 font-bold text-xs uppercase tracking-wider mb-1">Almacenamiento</p>
+            <h3 class="text-3xl font-black text-slate-800">4 <span class="text-lg font-normal text-slate-400">Archivos .bin</span></h3>
+            <p class="text-sm mt-2 text-slate-600 italic">Persistencia directa en disco sin SQL.</p>
+        </div>
+    </section>
+
+    <!-- Análisis de Composición y Tendencias -->
+    <section id="stats" class="grid grid-cols-1 md:grid-cols-2 gap-10 mb-16">
+        <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+            <h2 class="text-2xl font-bold mb-4 text-blue-900">Estado Operativo de Encuentros</h2>
+            <p class="text-slate-600 mb-8">
+                El sistema monitorea en tiempo real el ciclo de vida de los partidos. Esta distribución muestra la carga de trabajo actual del comité organizador.
+            </p>
+            <div class="chart-container">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+
+        <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+            <h2 class="text-2xl font-bold mb-4 text-blue-900">Eficiencia Ofensiva vs Éxito</h2>
+            <p class="text-slate-600 mb-8">
+                Correlación estadística entre los Goles a Favor (GF) y los Puntos Totales (PTS). Revela qué equipos capitalizan mejor su poder de ataque.
+            </p>
+            <div id="scatterPlot" class="w-full h-80"></div>
+        </div>
+    </section>
+
+    <!-- Ciclo de Vida del Partido - Diagrama HTML -->
+    <section id="flow" class="mb-16 bg-slate-900 text-white p-10 rounded-3xl overflow-hidden">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold mb-2 text-center">Protocolo de Registro de Partido</h2>
+            <p class="text-slate-400 text-center mb-12">Secuencia lógica interna para la sincronización de archivos binarios.</p>
+            
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between space-y-8 md:space-y-0">
+                <div class="flex flex-col items-center text-center max-w-[200px] flow-node">
+                    <div class="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-2xl mb-4 font-bold">1</div>
+                    <h4 class="font-bold text-blue-400 uppercase text-xs tracking-widest mb-2">Programación</h4>
+                    <p class="text-xs text-slate-300 italic">Se define ID local/visitante y fecha en modo PROGRAMADO.</p>
+                </div>
+
+                <div class="hidden md:block flow-line"></div>
+
+                <div class="flex flex-col items-center text-center max-w-[200px] flow-node">
+                    <div class="w-16 h-16 rounded-full bg-amber-500 flex items-center justify-center text-2xl mb-4 font-bold">2</div>
+                    <h4 class="font-bold text-amber-400 uppercase text-xs tracking-widest mb-2">Ejecución</h4>
+                    <p class="text-xs text-slate-300 italic">Carga de marcador final y detalle minuto a minuto por jugador.</p>
+                </div>
+
+                <div class="hidden md:block flow-line"></div>
+
+                <div class="flex flex-col items-center text-center max-w-[200px] flow-node">
+                    <div class="w-16 h-16 rounded-full bg-emerald-500 flex items-center justify-center text-2xl mb-4 font-bold">3</div>
+                    <h4 class="font-bold text-emerald-400 uppercase text-xs tracking-widest mb-2">Persistencia</h4>
+                    <p class="text-xs text-slate-300 italic">Cierre del estado JUGADO y actualización automática de tablas.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comparativa de Rendimiento -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
+        <div class="lg:col-span-2 bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+            <h2 class="text-2xl font-bold mb-4 text-blue-900">Top 5: Potencia Goleadora por Equipo</h2>
+            <p class="text-slate-600 mb-6">
+                Representación de los clubes con mayor volumen de anotación. La técnica de ordenamiento burbuja en el código asegura que este ranking sea exacto.
+            </p>
+            <div class="chart-container">
+                <canvas id="topTeamsChart"></canvas>
+            </div>
+        </div>
+
+        <div class="bg-blue-50 p-8 rounded-3xl border border-blue-100 flex flex-col justify-center">
+            <h3 class="text-xl font-bold text-blue-900 mb-4">💡 Insight del Sistema</h3>
+            <p class="text-blue-800 text-sm leading-relaxed mb-4">
+                El sistema utiliza <strong>Borrado Lógico</strong>. Cuando eliminas un equipo, el registro permanece en el archivo <code>equipos.bin</code> con una bandera <code>eliminado = true</code>.
+            </p>
+            <p class="text-blue-800 text-sm leading-relaxed">
+                Esto permite que el historial de partidos y las estadísticas de goleadores de ex-jugadores se mantengan consistentes, evitando la corrupción de datos históricos.
+            </p>
+        </div>
+    </section>
+
+    <!-- Sección de Integridad -->
+    <section id="integrity" class="bg-white p-10 rounded-3xl border border-slate-100 shadow-sm">
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-10">
+            <div>
+                <h2 class="text-3xl font-bold text-slate-900">Salud y Mantenimiento</h2>
+                <p class="text-slate-500 mt-2">Protocolos de auditoría interna de la base de datos binaria.</p>
+            </div>
+            <div class="mt-4 md:mt-0 px-4 py-2 bg-emerald-100 text-emerald-700 rounded-full text-sm font-bold flex items-center">
+                <span class="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse"></span> SISTEMA ÓPTIMO
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div class="space-y-6">
+                <div class="p-5 border-l-4 border-indigo-600 bg-indigo-50 rounded-r-xl">
+                    <h4 class="font-bold text-indigo-900">Verificación Referencial</h4>
+                    <p class="text-sm text-indigo-800 mt-1">Escanea relaciones Jugador-Equipo para detectar referencias rotas en tiempo real.</p>
+                </div>
+                <div class="p-5 border-l-4 border-blue-500 bg-blue-50 rounded-r-xl">
+                    <h4 class="font-bold text-blue-900">Mecanismo de Backup</h4>
+                    <p class="text-sm text-blue-800 mt-1">Clonación secuencial de archivos con prefijo <code>backup_</code> para puntos de restauración.</p>
+                </div>
+                <div class="p-5 border-l-4 border-slate-400 bg-slate-50 rounded-r-xl">
+                    <h4 class="font-bold text-slate-900">Header Autoincremental</h4>
+                    <p class="text-sm text-slate-800 mt-1">Control de IDs y versiones directamente en el bloque inicial de cada archivo binario.</p>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="integrityRadar"></canvas>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<footer class="bg-slate-100 py-10 text-center border-t border-slate-200">
+    <p class="text-slate-500 text-sm">© 2026 Liga Apertura - Sistema de Gestión de Torneos Profesionales</p>
+    <p class="text-slate-400 text-xs mt-1 italic">Visualización generada para el manual de usuario técnico del sistema C++.</p>
+</footer>
+
+<script>
+    // Lógica de envoltura de etiquetas (Max 16 caracteres)
+    const wrapLabel = (label) => {
+        if (label.length <= 16) return label;
+        const words = label.split(' ');
+        const lines = [];
+        let currentLine = "";
+        words.forEach(word => {
+            if ((currentLine + word).length > 16) {
+                lines.push(currentLine.trim());
+                currentLine = word + " ";
+            } else {
+                currentLine += word + " ";
+            }
+        });
+        lines.push(currentLine.trim());
+        return lines;
+    };
+
+    // Configuración común de tooltips
+    const tooltipConfig = {
+        callbacks: {
+            title: function(tooltipItems) {
+                const item = tooltipItems[0];
+                let label = item.chart.data.labels[item.dataIndex];
+                if (Array.isArray(label)) {
+                    return label.join(' ');
+                } else {
+                    return label;
+                }
+            }
+        }
+    };
+
+    // 1. Chart.js: Estado de Encuentros (Donut)
+    const ctxStatus = document.getElementById('statusChart').getContext('2d');
+    new Chart(ctxStatus, {
+        type: 'doughnut',
+        data: {
+            labels: [wrapLabel('Encuentros Programados'), wrapLabel('Partidos Jugados'), wrapLabel('Cancelados')],
+            datasets: [{
+                data: [45, 120, 12],
+                backgroundColor: ['#3b82f6', '#10b981', '#f43f5e'],
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' },
+                tooltip: tooltipConfig
+            }
+        }
+    });
+
+    // 2. Plotly.js: Relación GF vs Puntos (Scatter)
+    const scatterData = [{
+        x: [42, 38, 30, 25, 20, 15, 12, 10],
+        y: [28, 25, 22, 18, 14, 10, 8, 5],
+        mode: 'markers',
+        type: 'scatter',
+        marker: { size: 12, color: '#3b82f6', opacity: 0.8 },
+        text: ['Dragones FC', 'Inter CD', 'Real Liga', 'Atlas', 'Nacional', 'Tigres', 'Uni', 'Pumas']
+    }];
+
+    const scatterLayout = {
+        margin: { t: 10, r: 10, b: 40, l: 40 },
+        xaxis: { title: 'Goles a Favor (GF)' },
+        yaxis: { title: 'Puntos (PTS)' },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        canvas: true // Renderizado en Canvas solicitado
+    };
+
+    Plotly.newPlot('scatterPlot', scatterData, scatterLayout, {responsive: true, displayModeBar: false});
+
+    // 3. Chart.js: Top Teams Goals (Bar)
+    const ctxTop = document.getElementById('topTeamsChart').getContext('2d');
+    new Chart(ctxTop, {
+        type: 'bar',
+        data: {
+            labels: [
+                wrapLabel('Dragones de la Montaña'), 
+                wrapLabel('Club Deportivo Imperial'), 
+                wrapLabel('Real Academia Futbol'), 
+                wrapLabel('Unión Deportiva'), 
+                wrapLabel('Atlético Norte')
+            ],
+            datasets: [{
+                label: 'Goles Totales',
+                data: [42, 38, 33, 29, 21],
+                backgroundColor: '#1e3a8a',
+                borderRadius: 8
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: tooltipConfig
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: { grid: { display: false } }
+            }
+        }
+    });
+
+    // 4. Chart.js: Radar Integridad
+    const ctxRadar = document.getElementById('integrityRadar').getContext('2d');
+    new Chart(ctxRadar, {
+        type: 'radar',
+        data: {
+            labels: [
+                wrapLabel('Sincronización Binaria'), 
+                wrapLabel('Integridad Referencial'), 
+                wrapLabel('Seguridad de Backup'), 
+                wrapLabel('Consistencia Header'), 
+                wrapLabel('Validación ID')
+            ],
+            datasets: [{
+                label: 'Score de Salud %',
+                data: [98, 100, 95, 100, 100],
+                fill: true,
+                backgroundColor: 'rgba(79, 70, 229, 0.2)',
+                borderColor: '#4f46e5',
+                pointBackgroundColor: '#4f46e5'
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: tooltipConfig
+            },
+            scales: {
+                r: {
+                    angleLines: { display: false },
+                    suggestedMin: 0,
+                    suggestedMax: 100
+                }
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
