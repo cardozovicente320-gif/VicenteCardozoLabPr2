@@ -271,7 +271,7 @@ bool guardarEquipo(Equipo& equipo) {
     equipo.fechaCreacion = time(nullptr);
     equipo.fechaUltimaModificacion = time(nullptr);
 
-    fstream archivo(FILE_EQUIPOS, ios::in | ios::out | ios::binary);
+  fstream archivo(FILE_EQUIPOS, ios::in | ios::out | ios::binary);
     if (!archivo) return false;
 
     // Posición al final: Header + i * sizeof(Equipo)
@@ -1269,4 +1269,4 @@ int main(int argc, char* argv[]) {
     } while (opPrincipal != 0);
 
     return 0;
-}
+}  
