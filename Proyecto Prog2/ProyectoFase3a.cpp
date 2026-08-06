@@ -623,4 +623,238 @@ const char* FILE_PARTIDOS = "partidos.bin";
 
 const int MAX_RESULTADOS = 100;
 
+// 2. FUNCIONES AUXILIARES DE TIEMPO Y ENTRADA
 
+
+void obtenerFechaHoy(char* buffer) {
+    time_t t = time(nullptr);
+    tm* now = localtime(&t);
+    strftime(buffer, 11, "%Y-%m-%d", now);
+}
+
+
+// 
+// 3. CAPA DE PERSISTENCIA Y CONTROLADORES HEADER
+// 
+
+bool inicializarArchivo(const char* nombreArchivo) {
+    ifstream check(nombreArchivo, ios::binary);
+    if (check.good()) {
+        check.close();
+        return true; // Ya existe
+    }
+    check.close();
+
+    ofstream nuevo(nombreArchivo, ios::binary);
+    if (!nuevo) return false;
+
+    if (compararCadenas(nombreArchivo, FILE_TORNEO)) {
+        // Torneo no lleva Header autoincremental por regla del enunciado
+        Torneo t("Torneo de Verano 2026", "Futbol", "ELIMINATORIA", "2026-06-01", "2026-07-15");
+        nuevo.write(reinterpret_cast<char*>(&t), sizeof(Torneo));
+    } else {
+        ArchivoHeader h;
+        h.cantidadRegistros = 0;
+        h.proximoID = 1;
+        h.registrosActivos = 0;
+        h.version = 1;
+        nuevo.write(reinterpret_cast<char*>(&h), sizeof(ArchivoHeader));
+    }
+    nuevo.close();
+    return true;
+}
+
+ArchivoHeader leerHeader(const char* nombreArchivo) {
+    ArchivoHeader h = {0, 1, 0, 1};
+    ifstream archivo(nombreArchivo, ios::binary);
+    if (archivo) {
+        archivo.read(reinterpret_cast<char*>(&h), sizeof(ArchivoHeader));
+        archivo.close();
+    }
+    return h;
+}
+
+bool actualizarHeader(const char* nombreArchivo, ArchivoHeader header) {
+    fstream archivo(nombreArchivo, ios::in | ios::out | ios::binary);
+    if (!archivo) return false;
+    archivo.seekp(0, ios::beg);
+    archivo.write(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+    archivo.close();
+    return true;
+}
+
+int buscarIndicePorID(const char* nombreArchivo, int id, int tamanoRegistro) {
+    ifstream archivo(nombreArchivo, ios::binary);
+    if (!archivo) return -1;
+
+    ArchivoHeader h;
+    archivo.read(reinterpret_cast<char*>(&h), sizeof(ArchivoHeader));
+
+    char* buffer = new char[tamanoRegistro];
+    int resultado = -1;
+
+    for (int i = 0; i < h.cantidadRegistros; i++) {
+        archivo.seekg(sizeof(ArchivoHeader) + (i * tamanoRegistro), ios::beg);
+        archivo.read(buffer, tamanoRegistro);
+        
+        int registroId = *reinterpret_cast<int*>(buffer);
+        bool eliminado = false;
+        
+        if (compararCadenas(nombreArchivo, FILE_EQUIPOS)) {
+            eliminado = reinterpret_cast<Equipo*>(buffer)->getEliminado();
+        } else if (compararCadenas(nombreArchivo, FILE_JUGADORES)) {
+            eliminado = reinterpret_cast<Jugador*>(buffer)->getEliminado();
+        } else if (compararCadenas(nombreArchivo, FILE_PARTIDOS)) {
+            eliminado = reinterpret_cast<Partido*>(buffer)->getEliminado();
+        }
+
+        if (registroId == id && !eliminado) {
+            resultado = i;
+            break;
+        }
+    }
+
+    delete[] buffer;
+    archivo.close();
+    return resultado;
+}
+
+bool inicializarSistemaArchivos() {
+    return inicializarArchivo(FILE_TORNEO)    &&
+           inicializarArchivo(FILE_EQUIPOS)   &&
+           inicializarArchivo(FILE_JUGADORES) &&
+           inicializarArchivo(FILE_PARTIDOS);
+}
+
+
+
+// 4. FUNCIONES DE PERSISTENCIA (CRUD DE CLASES)
+
+
+// --- EQUIPOS ---
+
+bool guardarEquipo(Equipo& equipo) {
+    ArchivoHeader h = leerHeader(FILE_EQUIPOS);
+    equipo.setId(h.proximoID);
+    equipo.setEliminado(false);
+    equipo.setFechaCreacion(time(nullptr));
+    equipo.setFechaUltimaModificacion(time(nullptr));
+
+    fstream archivo(FILE_EQUIPOS, ios::in | ios::out | ios::binary);
+    if (!archivo) return false;
+
+    archivo.seekp(sizeof(ArchivoHeader) + (h.cantidadRegistros * sizeof(Equipo)), ios::beg);
+    archivo.write(reinterpret_cast<char*>(&equipo), sizeof(Equipo));
+    archivo.close();
+
+    h.cantidadRegistros++;
+    h.registrosActivos++;
+    h.proximoID++;
+    return actualizarHeader(FILE_EQUIPOS, h);
+}
+
+bool leerEquipoPorID(int id, Equipo& resultado) {
+    int index = buscarIndicePorID(FILE_EQUIPOS, id, sizeof(Equipo));
+    if (index == -1) return false;
+
+    ifstream archivo(FILE_EQUIPOS, ios::binary);
+    if (!archivo) return false;
+
+    archivo.seekg(sizeof(ArchivoHeader) + (index * sizeof(Equipo)), ios::beg);
+    archivo.read(reinterpret_cast<char*>(&resultado), sizeof(Equipo));
+    archivo.close();
+    return true;
+}
+
+bool actualizarEquipo(Equipo& equipo) {
+    int index = buscarIndicePorID(FILE_EQUIPOS, equipo.getId(), sizeof(Equipo));
+    if (index == -1) return false;
+
+    equipo.setFechaUltimaModificacion(time(nullptr));
+
+    fstream archivo(FILE_EQUIPOS, ios::in | ios::out | ios::binary);
+    if (!archivo) return false;
+
+    archivo.seekp(sizeof(ArchivoHeader) + (index * sizeof(Equipo)), ios::beg);
+    archivo.write(reinterpret_cast<char*>(&equipo), sizeof(Equipo));
+    archivo.close();
+    return true;
+}
+
+bool eliminarEquipoLogico(int id) {
+    Equipo eq;
+    if (!leerEquipoPorID(id, eq)) return false;
+
+    eq.setEliminado(true);
+    if (!actualizarEquipo(eq)) return false;
+
+    ArchivoHeader h = leerHeader(FILE_EQUIPOS);
+    h.registrosActivos--;
+    return actualizarHeader(FILE_EQUIPOS, h);
+}
+
+int contarEquiposActivos() {
+    return leerHeader(FILE_EQUIPOS).registrosActivos;
+}
+
+// --- JUGADORES ---
+
+bool guardarJugador(Jugador& jugador) {
+    ArchivoHeader h = leerHeader(FILE_JUGADORES);
+    jugador.setId(h.proximoID);
+    jugador.setEliminado(false);
+    jugador.setFechaCreacion(time(nullptr));
+    jugador.setFechaUltimaModificacion(time(nullptr));
+
+    fstream archivo(FILE_JUGADORES, ios::in | ios::out | ios::binary);
+    if (!archivo) return false;
+
+    archivo.seekp(sizeof(ArchivoHeader) + (h.cantidadRegistros * sizeof(Jugador)), ios::beg);
+    archivo.write(reinterpret_cast<char*>(&jugador), sizeof(Jugador));
+    archivo.close();
+
+    h.cantidadRegistros++;
+    h.registrosActivos++;
+    h.proximoID++;
+    return actualizarHeader(FILE_JUGADORES, h);
+}
+
+bool leerJugadorPorID(int id, Jugador& resultado) {
+    int index = buscarIndicePorID(FILE_JUGADORES, id, sizeof(Jugador));
+    if (index == -1) return false;
+
+    ifstream archivo(FILE_JUGADORES, ios::binary);
+    if (!archivo) return false;
+
+    archivo.seekg(sizeof(ArchivoHeader) + (index * sizeof(Jugador)), ios::beg);
+    archivo.read(reinterpret_cast<char*>(&resultado), sizeof(Jugador));
+    archivo.close();
+    return true;
+}
+
+bool actualizarJugador(Jugador& jugador) {
+    int index = buscarIndicePorID(FILE_JUGADORES, jugador.getId(), sizeof(Jugador));
+    if (index == -1) return false;
+
+    jugador.setFechaUltimaModificacion(time(nullptr));
+
+    fstream archivo(FILE_JUGADORES, ios::in | ios::out | ios::binary);
+    if (!archivo) return false;
+
+    archivo.seekp(sizeof(ArchivoHeader) + (index * sizeof(Jugador)), ios::beg);
+    archivo.write(reinterpret_cast<char*>(&jugador), sizeof(Jugador));
+    archivo.close();
+    return true;
+}
+
+bool eliminarJugadorLogico(int id) {
+    Jugador jug;
+    if (!leerJugadorPorID(id, jug)) return false;
+
+    jug.setEliminado(true);
+    if (!actualizarJugador(jug)) return false;
+
+    ArchivoHeader h = leerHeader(FILE_JUGADORES);
+    h.registrosActivos--;
+    return actualizarHeader(FILE_JUGADORES, h);
+}
