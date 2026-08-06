@@ -858,3 +858,135 @@ bool eliminarJugadorLogico(int id) {
     h.registrosActivos--;
     return actualizarHeader(FILE_JUGADORES, h);
 }
+
+// --- PARTIDOS ---
+
+bool guardarPartido(Partido& partido) {
+    ArchivoHeader h = leerHeader(FILE_PARTIDOS);
+    partido.setId(h.proximoID);
+    partido.setEliminado(false);
+    partido.setFechaCreacion(time(nullptr));
+    partido.setFechaUltimaModificacion(time(nullptr));
+
+    fstream archivo(FILE_PARTIDOS, ios::in | ios::out | ios::binary);
+    if (!archivo) return false;
+
+    archivo.seekp(sizeof(ArchivoHeader) + (h.cantidadRegistros * sizeof(Partido)), ios::beg);
+    archivo.write(reinterpret_cast<char*>(&partido), sizeof(Partido));
+    archivo.close();
+
+    h.cantidadRegistros++;
+    h.registrosActivos++;
+    h.proximoID++;
+    return actualizarHeader(FILE_PARTIDOS, h);
+}
+
+bool leerPartidoPorID(int id, Partido& resultado) {
+    int index = buscarIndicePorID(FILE_PARTIDOS, id, sizeof(Partido));
+    if (index == -1) return false;
+
+    ifstream archivo(FILE_PARTIDOS, ios::binary);
+    if (!archivo) return false;
+
+    archivo.seekg(sizeof(ArchivoHeader) + (index * sizeof(Partido)), ios::beg);
+    archivo.read(reinterpret_cast<char*>(&resultado), sizeof(Partido));
+    archivo.close();
+    return true;
+}
+
+bool actualizarPartido(Partido& partido) {
+    int index = buscarIndicePorID(FILE_PARTIDOS, partido.getId(), sizeof(Partido));
+    if (index == -1) return false;
+
+    partido.setFechaUltimaModificacion(time(nullptr));
+
+    fstream archivo(FILE_PARTIDOS, ios::in | ios::out | ios::binary);
+    if (!archivo) return false;
+
+    archivo.seekp(sizeof(ArchivoHeader) + (index * sizeof(Partido)), ios::beg);
+    archivo.write(reinterpret_cast<char*>(&partido), sizeof(Partido));
+    archivo.close();
+    return true;
+}
+
+// 5. LÓGICA DE BÚSQUEDA Y FILTRADO
+
+
+int buscarEquiposPorNombre(const char* subcadena, Equipo resultados[], int maxResultados) {
+    ifstream archivo(FILE_EQUIPOS, ios::binary);
+    if (!archivo) return 0;
+
+    ArchivoHeader h;
+    archivo.read(reinterpret_cast<char*>(&h), sizeof(ArchivoHeader));
+
+    int count = 0;
+    for (int i = 0; i < h.cantidadRegistros && count < maxResultados; i++) {
+        Equipo eq;
+        archivo.read(reinterpret_cast<char*>(&eq), sizeof(Equipo));
+        if (!eq.getEliminado() && contieneSubcadena(eq.getNombre(), subcadena)) {
+            resultados[count++] = eq;
+        }
+    }
+    archivo.close();
+    return count;
+}
+
+int listarJugadoresPorEquipo(int idEquipo, Jugador resultados[], int maxResultados) {
+    ifstream archivo(FILE_JUGADORES, ios::binary);
+    if (!archivo) return 0;
+
+    ArchivoHeader h;
+    archivo.read(reinterpret_cast<char*>(&h), sizeof(ArchivoHeader));
+
+    int count = 0;
+    for (int i = 0; i < h.cantidadRegistros && count < maxResultados; i++) {
+        Jugador jug;
+        archivo.read(reinterpret_cast<char*>(&jug), sizeof(Jugador));
+        if (!jug.getEliminado() && jug.getIdEquipo() == idEquipo) {
+            resultados[count++] = jug;
+        }
+    }
+    archivo.close();
+    return count;
+}
+
+int listarPartidosPorEquipo(int idEquipo, Partido resultados[], int maxResultados) {
+    ifstream archivo(FILE_PARTIDOS, ios::binary);
+    if (!archivo) return 0;
+
+    ArchivoHeader h;
+    archivo.read(reinterpret_cast<char*>(&h), sizeof(ArchivoHeader));
+
+    int count = 0;
+    for (int i = 0; i < h.cantidadRegistros && count < maxResultados; i++) {
+        Partido p;
+        archivo.read(reinterpret_cast<char*>(&p), sizeof(Partido));
+        if (!p.getEliminado() && (p.getIdEquipoLocal() == idEquipo || p.getIdEquipoVisitante() == idEquipo)) {
+            resultados[count++] = p;
+        }
+    }
+    archivo.close();
+    return count;
+}
+
+int listarPartidosPorEstado(const char* estado, Partido resultados[], int maxResultados) {
+    ifstream archivo(FILE_PARTIDOS, ios::binary);
+    if (!archivo) return 0;
+
+    ArchivoHeader h;
+    archivo.read(reinterpret_cast<char*>(&h), sizeof(ArchivoHeader));
+
+    int count = 0;
+    for (int i = 0; i < h.cantidadRegistros && count < maxResultados; i++) {
+        Partido p;
+        archivo.read(reinterpret_cast<char*>(&p), sizeof(Partido));
+        if (!p.getEliminado() && compararCadenas(p.getEstado(), estado)) {
+            resultados[count++] = p;
+        }
+    }
+    archivo.close();
+    return count;
+}
+
+
+
