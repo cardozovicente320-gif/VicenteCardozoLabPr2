@@ -6,7 +6,6 @@
 #include <iostream>
 
 int main() {
-    // Inicializar archivos - solo creación si no existen
     if (!GestorArchivos::inicializarArchivo("datos/equipos.bin") ||
         !GestorArchivos::inicializarArchivo("datos/jugadores.bin") ||
         !GestorArchivos::inicializarArchivo("datos/partidos.bin")) {
@@ -14,7 +13,6 @@ int main() {
         return 1;
     }
     
-    // Delegar TODO a la interfaz
     Interfaz interfaz;
     interfaz.ejecutar();
     
